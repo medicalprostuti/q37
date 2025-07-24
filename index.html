@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "অপটিক্যাল ফাইবার কোন পদ্ধতিতে কাজ করে?",
+          options: {
+            a: "আলোকের পূর্ণ অভ্যন্তরীণ প্রতিফলন",
+            b: "আলোকের প্রতিসরণ",
+            c: "আলোকের অপবর্তন",
+            d: "আলোকের প্রতিফলন",
+          },
+          answer: "a",
+          explanation:
+            "<p><b>অপটিক্যাল ফাইবার</b> হলো আলোক সঞ্চালনের জন্য ব্যবহৃত একটি পাতলা তন্তু। এটি <b>আলোকের পূর্ণ অভ্যন্তরীণ প্রতিফলন (Total Internal Reflection - TIR)</b> নীতির উপর ভিত্তি করে কাজ করে। যখন আলো একটি ঘন মাধ্যম থেকে লঘু মাধ্যমে নির্দিষ্ট কোণে আপতিত হয়, তখন এটি বিভেদতল দ্বারা সম্পূর্ণরূপে প্রতিফলিত হয়ে ঘন মাধ্যমেই ফিরে আসে, যাকে পূর্ণ অভ্যন্তরীণ প্রতিফলন বলে। অপটিক্যাল ফাইবারে আলোর সংকেত এই নীতির মাধ্যমে এক প্রান্ত থেকে অন্য প্রান্তে প্রেরিত হয়।</p>",
+        },
+        {
+          id: 2,
+          question: "কোন নীতিতে আলোকীয় তন্তুর ভেতর দিয়ে আলো সঞ্চালিত হয়?",
+          options: {
+            a: "পূর্ণ অভ্যন্তরীণ প্রতিফলন",
+            b: "বিক্ষেপণ",
+            c: "ব্যতিচার",
+            d: "অপবর্তন",
+          },
+          answer: "a",
+          explanation:
+            "<p>আলোকীয় তন্তু, যা অপটিক্যাল ফাইবার নামেও পরিচিত, <b>পূর্ণ অভ্যন্তরীণ প্রতিফলন (Total Internal Reflection)</b> নীতি ব্যবহার করে আলোর সংকেত পরিবহন করে। এই পদ্ধতিতে আলো একটি মাধ্যম থেকে অন্য মাধ্যমে প্রবেশ না করে, বরং সম্পূর্ণভাবে একই মাধ্যমে প্রতিফলিত হয়।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "কোন দর্পণের উন্মেষ কত ডিগ্রি হলে তাকে ক্ষুদ্র উন্মেষ দর্পণ বলে?",
+          options: {
+            a: "> 10°",
+            b: "< 10°",
+            c: "> 15°",
+            d: "< 20°",
+          },
+          answer: "b",
+          explanation:
+            "<p><b>দর্পণের উন্মেষ</b> বলতে দর্পণের প্রতিফলক তলের প্রান্তবিন্দুগুলো কর্তৃক মেরুতে উৎপন্ন কোণকে বোঝায়। যে সকল দর্পণের উন্মেষ <b>10° এর কম</b> হয়, সেগুলোকে <b>ক্ষুদ্র উন্মেষ দর্পণ</b> বলা হয়। এই ধরনের দর্পণগুলো পারাক্ষিক রশ্মি (paraxial rays) নিয়ে কাজ করে এবং এদের ক্ষেত্রে ফোকাস দূরত্ব ও বক্রতার ব্যাসার্ধের মধ্যে সরল সম্পর্ক (R=2f) প্রযোজ্য হয়।</p>",
+        },
+        {
+          id: 4,
+          question: "অপটিক্যাল ফাইবারের প্রধান উপাদান কোনটি?",
+          options: {
+            a: "CaO",
+            b: "MgO",
+            c: "CuO",
+            d: "SiO₂",
+          },
+          answer: "d",
+          explanation:
+            "<p>অপটিক্যাল ফাইবারের প্রধান উপাদান হলো <b>সিলিকা (Silicon Dioxide - SiO₂)</b>। এটি অত্যন্ত বিশুদ্ধ কাচ দিয়ে তৈরি হয়, যা আলোর সংকেতকে ন্যূনতম ক্ষয়ক্ষতি সহকারে দীর্ঘ দূরত্বে পরিবহন করতে পারে।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "আলোকের কোন ধর্মের জন্য পুকুরের ভেতর মাছকে কিছুটা উপরে দেখতে পাওয়া যায়?",
+          options: {
+            a: "অপবর্তন",
+            b: "সমবর্তন",
+            c: "প্রতিসরণ",
+            d: "প্রতিফলন",
+          },
+          answer: "c",
+          explanation:
+            "<p>পুকুরের ভেতর মাছকে কিছুটা উপরে দেখতে পাওয়ার কারণ হলো <b>আলোকের প্রতিসরণ (Refraction)</b>। যখন আলো ঘন মাধ্যম (পানি) থেকে লঘু মাধ্যমে (বায়ু) প্রবেশ করে, তখন এটি অভিলম্ব থেকে দূরে সরে যায়। ফলে, মাছ থেকে আসা আলোক রশ্মি যখন পানির পৃষ্ঠ থেকে বায়ুতে আসে এবং দর্শকের চোখে পৌঁছায়, তখন দর্শক মাছটিকে তার প্রকৃত অবস্থানের চেয়ে কিছুটা উপরে দেখতে পান।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "কাচের মধ্য দিয়ে বিভিন্ন বর্ণের আলো পরিভ্রমণ করলে কোন বর্ণের আলোর বেগ বেশি হবে?",
+          options: {
+            a: "লাল",
+            b: "নীল",
+            c: "হলুদ",
+            d: "বেগুনি",
+          },
+          answer: "a",
+          explanation:
+            "<p>আলোর বেগ মাধ্যমের প্রতিসরাঙ্কের উপর নির্ভরশীল। যে বর্ণের আলোর জন্য মাধ্যমের প্রতিসরাঙ্ক কম, সেই বর্ণের আলোর বেগ বেশি হয়। কাচের ক্ষেত্রে, <b>লাল আলোর</b> তরঙ্গদৈর্ঘ্য বেশি এবং এর জন্য প্রতিসরাঙ্ক সবচেয়ে কম, তাই লাল আলোর বেগ কাচের মধ্য দিয়ে বেশি হয়। অন্যদিকে, বেগুনি আলোর তরঙ্গদৈর্ঘ্য কম এবং প্রতিসরাঙ্ক বেশি, তাই এর বেগ সবচেয়ে কম।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "পানি ও কাচের প্রতিসরাঙ্ক যথাক্রমে ⁴⁄₃ এবং ³⁄₂ হলে পানি ও কাচে আলোর বেগের অনুপাত কত?",
+          options: {
+            a: "3 : 2",
+            b: "4 : 3",
+            c: "8 : 9",
+            d: "9 : 8",
+          },
+          answer: "d",
+          explanation:
+            "<p>আমরা জানি, কোনো মাধ্যমের প্রতিসরাঙ্ক (μ) এবং সেই মাধ্যমে আলোর বেগ (v) এর সম্পর্ক হলো: v = c / μ, যেখানে c হলো শূন্য মাধ্যমে আলোর বেগ।<br>পানিতে আলোর বেগ (v<sub>w</sub>) = c / (⁴⁄₃) = ³⁄₄ c<br>কাচে আলোর বেগ (v<sub>g</sub>) = c / (³⁄₂) = ²⁄₃ c<br>এখন, পানি ও কাচে আলোর বেগের অনুপাত:<br>v<sub>w</sub> : v<sub>g</sub> = (³⁄₄ c) : (²⁄₃ c) = ³⁄₄ : ²⁄₃ = 9 : 8<br>সুতরাং, পানি ও কাচে আলোর বেগের অনুপাত হলো <b>9 : 8</b>।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "অবতল দর্পনের বক্রতার কেন্দ্রের বাহিরে বস্তু স্থাপন করলে প্রতিবিম্ব সর্বদা হবে -",
+          options: {
+            a: "বাস্তব, সোজা ও খর্বিত",
+            b: "অবাস্তব, সোজা ও বিবর্ধিত",
+            c: "অবাস্তব, উল্টা ও খর্বিত",
+            d: "বাস্তব, উল্টা ও খর্বিত",
+          },
+          answer: "d",
+          explanation:
+            "<p>যখন একটি <b>অবতল দর্পণের বক্রতার কেন্দ্রের (C) বাইরে</b> বস্তু স্থাপন করা হয় (অর্থাৎ, u > 2f), তখন প্রতিবিম্বটি <b>বক্রতার কেন্দ্র (C) এবং ফোকাস (F) এর মধ্যে</b> গঠিত হয়। এই প্রতিবিম্বটি সর্বদা <b>বাস্তব, উল্টা এবং খর্বিত (বস্তুর চেয়ে ছোট)</b> হয়।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "আলো চলার পথে শক্তির অপচয় কম করে যে পথে চলে সে নীতিকে বলে -",
+          options: {
+            a: "হাইজেনবার্গ নীতি",
+            b: "পাউলীর বর্জন নীতি",
+            c: "ভরবেগ ভারসাম্য",
+            d: "ফার্মাটের নীতি",
+          },
+          answer: "d",
+          explanation:
+            "<p><b>ফার্মাটের নীতি (Fermat's Principle)</b> অনুসারে, আলো যখন এক বিন্দু থেকে অন্য বিন্দুতে যায়, তখন সে এমন পথ অনুসরণ করে যাতে সর্বনিম্ন সময় লাগে। এই নীতিটি আলোর প্রতিফলন ও প্রতিসরণের সূত্র ব্যাখ্যা করতে ব্যবহৃত হয় এবং এটি ইঙ্গিত করে যে আলো সবচেয়ে 'দক্ষ' পথে চলে, যেখানে শক্তির অপচয় কম হয়।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "লাল, বেগুনি, সবুজ ও কমলা বর্ণের আলোর জন্য কোনো মাধ্যমের প্রতিসরাঙ্ক যথাক্রমে μᵣ, μᵥ, μ₉, এবং μₒ হলে নিচের কোন সম্পর্কটি সঠিক?",
+          options: {
+            a: "μᵣ < μᵥ > μ₉ < μₒ",
+            b: "μᵣ > μᵥ > μ₉ > μₒ",
+            c: "μᵣ > μᵥ < μ₉ < μₒ",
+            d: "μᵣ < μₒ < μ₉ < μᵥ",
+          },
+          answer: "d",
+          explanation:
+            "<p>কোনো মাধ্যমে আলোর <b>প্রতিসরাঙ্ক</b> আলোর তরঙ্গদৈর্ঘ্যের উপর নির্ভর করে। <b>তরঙ্গদৈর্ঘ্য যত কম হয়, প্রতিসরাঙ্ক তত বেশি হয়</b>।<br>তরঙ্গদৈর্ঘ্যের ক্রম (কম থেকে বেশি): বেগুনি < সবুজ < কমলা < লাল।<br>সুতরাং, প্রতিসরাঙ্কের ক্রম (বেশি থেকে কম) হবে: μ<sub>v</sub> > μ<sub>g</sub> > μ<sub>o</sub> > μ<sub>r</sub>।<br>প্রদত্ত বিকল্পগুলির মধ্যে, সঠিক সম্পর্কটি হলো: <b>μᵣ < μₒ < μ₉ < μᵥ</b>।</p>",
+        },
+        {
+          id: 11,
+          question: "কোনো মাধ্যমের প্রতিসরাঙ্ক কীসের ওপর নির্ভর করে না?",
+          options: {
+            a: "মাধ্যমদ্বয়ের প্রকৃতি",
+            b: "মাধ্যমের আলোকীয় ঘনত্ব",
+            c: "আলোর বর্ণ",
+            d: "আপতন কোণ",
+          },
+          answer: "d",
+          explanation:
+            "<p>কোনো মাধ্যমের <b>প্রতিসরাঙ্ক</b> একটি ধ্রুবক, যা মূলত <b>মাধ্যমদ্বয়ের প্রকৃতি, মাধ্যমের আলোকীয় ঘনত্ব এবং আলোর বর্ণের (তরঙ্গদৈর্ঘ্য)</b> উপর নির্ভর করে। তবে, <b>আপতন কোণের</b> উপর এটি নির্ভর করে না। আপতন কোণ পরিবর্তিত হলেও প্রতিসরাঙ্কের মান নির্দিষ্ট মাধ্যম-জোড়ার জন্য একই থাকে।</p>",
+        },
+        {
+          id: 12,
+          question: "নিচের কোন সম্পর্কটি সঠিক?",
+          options: {
+            a: "<sub>a</sub>μ<sub>b</sub> = C<sub>b</sub> / C<sub>a</sub>",
+            b: "<sub>a</sub>μ<sub>b</sub> = C<sub>a</sub> / C<sub>b</sub>",
+            c: "<sub>a</sub>μ<sub>b</sub> = 1 / <sub>b</sub>μ<sub>a</sub>",
+            d: "<sub>a</sub>μ<sub>b</sub> = μ<sub>a</sub> / μ<sub>b</sub>",
+          },
+          answer: "b",
+          explanation:
+            "<p><b><sub>a</sub>μ<sub>b</sub></b> বলতে 'a' মাধ্যম সাপেক্ষে 'b' মাধ্যমের প্রতিসরাঙ্ক বোঝায়। এর সংজ্ঞা অনুযায়ী, এটি 'a' মাধ্যমে আলোর বেগ (C<sub>a</sub>) এবং 'b' মাধ্যমে আলোর বেগের (C<sub>b</sub>) অনুপাত।<br>সুতরাং, <b><sub>a</sub>μ<sub>b</sub> = C<sub>a</sub> / C<sub>b</sub></b> সম্পর্কটি সঠিক।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "বেগুনি, নীল ও হলুদ রং এর তিনটি আলোর কম্পাঙ্ক যথাক্রমে νᵥ, νᵦ, ও νᵧ হলে নিচের কোনটি সঠিক?",
+          options: {
+            a: "νᵥ > νᵦ > νᵧ",
+            b: "νᵧ > νᵦ > νᵥ",
+            c: "νᵦ > νᵥ > νᵧ",
+            d: "νᵧ > νᵥ > νᵦ",
+          },
+          answer: "a",
+          explanation:
+            "<p>দৃশ্যমান আলোর বর্ণালীতে, আলোর <b>কম্পাঙ্ক</b> এবং <b>তরঙ্গদৈর্ঘ্য</b> পরস্পর বিপরীতভাবে সম্পর্কিত। <b>বেগুনি আলোর</b> তরঙ্গদৈর্ঘ্য সবচেয়ে কম এবং কম্পাঙ্ক সবচেয়ে বেশি। <b>হলুদ আলোর</b> তরঙ্গদৈর্ঘ্য বেগুনি ও নীলের চেয়ে বেশি, তাই এর কম্পাঙ্ক কম।<br>রংগুলোর কম্পাঙ্কের ক্রম (বেশি থেকে কম): বেগুনি > নীল > হলুদ।<br>সুতরাং, সঠিক সম্পর্কটি হলো: <b>νᵥ > νᵦ > νᵧ</b>।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "একটি অবতল দর্পণের মেরু এবং ফোকাসের মধ্যখানে একটি বস্তু স্থাপন করলে বিবর্ধন কত হবে?",
+          options: {
+            a: "2",
+            b: "½",
+            c: "1",
+            d: "²⁄₃",
+          },
+          answer: "a",
+          explanation:
+            "<p>যখন একটি <b>অবতল দর্পণের মেরু (P) এবং ফোকাসের (F) মধ্যখানে</b> (অর্থাৎ, u < f) বস্তু স্থাপন করা হয়, তখন প্রতিবিম্বটি <b>অবাস্তব, সোজা এবং বিবর্ধিত</b> (বস্তুর চেয়ে বড়) হয়। এক্ষেত্রে <b>বিবর্ধনের মান এক (1) অপেক্ষা বড়</b> হবে। অপশন '2' হলো একটি সম্ভাব্য মান যা এই শর্ত পূরণ করে।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "f ফোকাস দৈর্ঘ্যবিশিষ্ট অবতল দর্পণের সামনে বস্তু কোথায় রাখলে সদ এবং বিবর্ধিত প্রতিবিম্ব গঠিত হবে?",
+          options: {
+            a: "f < u < 2f",
+            b: "u > 2f",
+            c: "u < f",
+            d: "u = 2f",
+          },
+          answer: "a",
+          explanation:
+            "<p>একটি <b>অবতল দর্পণে</b> <b>সদ (বাস্তব) এবং বিবর্ধিত প্রতিবিম্ব</b> গঠিত হয় যখন বস্তুকে <b>ফোকাস (f) এবং বক্রতার কেন্দ্র (2f) এর মধ্যে</b> স্থাপন করা হয়। অর্থাৎ, <b>f < u < 2f</b>। এই ক্ষেত্রে, প্রতিবিম্বটি বক্রতার কেন্দ্রের বাইরে গঠিত হয় এবং এটি উল্টা ও বিবর্ধিত হয়।</p>",
+        },
+        {
+          id: 16,
+          question: "উত্তল দর্পণের সামনে বস্তু রাখলে প্রতিবিম্ব সর্বদা-",
+          options: {
+            a: "সদ এবং বিবর্ধিত হয়",
+            b: "অসদ ও আকারে ছোট হয়",
+            c: "সদ এবং আকারে ছোট হয়",
+            d: "অসদ এবং বিবর্ধিত হয়",
+          },
+          answer: "b",
+          explanation:
+            "<p>একটি <b>উত্তল দর্পণ</b> সবসময় <b>অসদ (অবাস্তব), সোজা এবং আকারে ছোট (খর্বিত)</b> প্রতিবিম্ব তৈরি করে, বস্তুর অবস্থান যেখানেই হোক না কেন। এই প্রতিবিম্বটি দর্পণের পেছনে, মেরু ও ফোকাসের মধ্যে গঠিত হয়।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "একটি অবতল দর্পণ থেকে কত দূরত্বে বস্তুরাখলে প্রতিবিম্বের আকৃতি বস্তুর আকৃতির দ্বিগুণ হবে? [দর্পণের ফোকাস দূরত্ব f]",
+          options: {
+            a: "u = f",
+            b: "u = ³⁄₂ f",
+            c: "u = 2f",
+            d: "u = ²⁄₃ f",
+          },
+          answer: "b",
+          explanation:
+            "<p><b>অবতল দর্পণের ক্ষেত্রে বিবর্ধন (M)</b> এর সূত্র হলো: M = f / (f - u)।<br>প্রতিবিম্বের আকৃতি বস্তুর আকৃতির দ্বিগুণ এবং বাস্তব হলে M = -2 (উল্টা প্রতিবিম্ব)।<br>-2 = f / (f - u)<br>-2(f - u) = f<br>-2f + 2u = f<br>2u = 3f<br><b>u = ³⁄₂ f</b><br>সুতরাং, বস্তুকে অবতল দর্পণ থেকে <b>³⁄₂ f</b> দূরত্বে রাখলে প্রতিবিম্বের আকৃতি বস্তুর আকৃতির দ্বিগুণ হবে।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "আলোক রশ্মি কাচ মাধ্যম থেকে পানিতে প্রবেশ করলে কোন বর্ণের ক্ষেত্রে সংকট কোণ ন্যূনতম হবে?",
+          options: {
+            a: "লাল",
+            b: "সবুজ",
+            c: "হলুদ",
+            d: "বেগুনি",
+          },
+          answer: "d",
+          explanation:
+            "<p><b>সংকট কোণ (θ<sub>c</sub>)</b> এর সূত্র হলো: sin θ<sub>c</sub> = μ<sub>2</sub> / μ<sub>1</sub>।<br><b>প্রতিসরাঙ্ক যত বেশি হয়, সংকট কোণ তত কম হয়।</b><br>কাচের মধ্য দিয়ে <b>বেগুনি আলোর</b> প্রতিসরাঙ্ক সবচেয়ে বেশি। তাই <b>বেগুনি আলোর</b> জন্য সংকট কোণ ন্যূনতম হবে।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "লাল ও বেগুনি বর্ণের আলোর সাপেক্ষে কোনো মাধ্যমের প্রতিসরাঙ্ক যথাক্রমে μᵣ এবং μᵥ হলে-",
+          options: {
+            a: "μᵣ > μᵥ",
+            b: "μᵣ < μᵥ",
+            c: "μᵣ = μᵥ",
+            d: "কোনোটিই নয়",
+          },
+          answer: "b",
+          explanation:
+            "<p>আলোর <b>প্রতিসরাঙ্ক</b> তার <b>তরঙ্গদৈর্ঘ্যের</b> উপর নির্ভর করে। <b>লাল আলোর</b> তরঙ্গদৈর্ঘ্য বেগুনি আলোর চেয়ে বেশি। সুতরাং, লাল আলোর জন্য প্রতিসরাঙ্ক <b>বেগুনি আলোর</b> জন্য প্রতিসরাঙ্কের চেয়ে কম হবে।<br>অর্থাৎ, <b>μᵣ < μᵥ</b> সম্পর্কটি সঠিক।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "বায়ু সাপেক্ষে পানির প্রতিসরণাঙ্ক ⁴⁄₃। পানির সাপেক্ষে বায়ুর প্রতিসরণাঙ্ক কত?",
+          options: {
+            a: "¹⁄₃",
+            b: "²⁄₃",
+            c: "1.33",
+            d: "0.75",
+          },
+          answer: "d",
+          explanation:
+            "<p>আমরা জানি, <sub>water</sub>μ<sub>air</sub> = 1 / <sub>air</sub>μ<sub>water</sub><br>এখানে, <sub>air</sub>μ<sub>water</sub> = ⁴⁄₃<br>সুতরাং, <sub>water</sub>μ<sub>air</sub> = 1 / (⁴⁄₃) = ¾ = <b>0.75</b>।</p>",
+        },
+        {
+          id: 21,
+          question: "প্রতিসরণের সময় যে রাশিটির পরিবর্তন হয় না-",
+          options: {
+            a: "দিক",
+            b: "দ্রুতি",
+            c: "কম্পাঙ্ক",
+            d: "তরঙ্গদৈর্ঘ্য",
+          },
+          answer: "c",
+          explanation:
+            "<p>যখন আলো এক মাধ্যম থেকে অন্য মাধ্যমে প্রতিসরিত হয়, তখন এর <b>দিক</b>, <b>দ্রুতি (বেগ)</b> এবং <b>তরঙ্গদৈর্ঘ্য</b> পরিবর্তিত হয়। তবে, <b>কম্পাঙ্ক (frequency)</b> আলোর উৎসের উপর নির্ভরশীল এবং এটি মাধ্যম পরিবর্তনের সাথে সাথে পরিবর্তিত হয় না।</p>",
+        },
+        {
+          id: 22,
+          question: "মরীচিকা ব্যাখ্যা করার জন্য প্রয়োজন-",
+          options: {
+            a: "আলোর প্রতিফলনের সূত্র",
+            b: "পূর্ণ অভ্যন্তরীণ প্রতিফলন",
+            c: "আলোর প্রতিসরণ",
+            d: "কোনোটিই নয়",
+          },
+          answer: "b",
+          explanation:
+            "<p><b>মরীচিকা (Mirage)</b> হলো একটি অপটিক্যাল ঘটনা যা বায়ুমণ্ডলে বিভিন্ন স্তরের তাপমাত্রার পার্থক্যের কারণে ঘটে। উষ্ণ বায়ুর প্রতিসরাঙ্ক শীতল বায়ুর চেয়ে কম হয়। এর ফলে, আলোক রশ্মিগুলো ঘন থেকে লঘু মাধ্যমে আসার সময় ক্রমাগত প্রতিসরিত হতে থাকে এবং এক পর্যায়ে <b>পূর্ণ অভ্যন্তরীণ প্রতিফলন</b> ঘটে।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "অস্তগামী সূর্য দেখার জন্য পানি হতে একটি মাছকে কোন দিকে দৃষ্টিপাত করতে হবে? [পানির প্রতিসরণাঙ্ক = ⁴⁄₃]",
+          options: {
+            a: "sin⁻¹(³/₄)",
+            b: "sin⁻¹(¹⁄₃)",
+            c: "sin⁻¹(²/₃)",
+            d: "sin⁻¹(⁴⁄₃)",
+          },
+          answer: "a",
+          explanation:
+            "<p>অস্তগামী সূর্য দিগন্তরেখায় থাকে, তাই আপতন কোণ (θ<sub>1</sub>) প্রায় 90°।<br><b>স্নেলের সূত্র:</b> μ<sub>1</sub> sin θ<sub>1</sub> = μ<sub>2</sub> sin θ<sub>2</sub><br>1 × sin(90°) = (⁴⁄₃) × sin θ<sub>2</sub><br>1 = (⁴⁄₃) × sin θ<sub>2</sub><br>sin θ<sub>2</sub> = ¾<br>θ<sub>2</sub> = sin⁻¹(³/₄)<br>সুতরাং, অস্তগামী সূর্য দেখার জন্য পানি হতে একটি মাছকে <b>sin⁻¹(³/₄)</b> কোণে দৃষ্টিপাত করতে হবে।</p>",
+        },
+        {
+          id: 24,
+          question: "কোন কারণে আলোর বর্ণ ভিন্ন হয়?",
+          options: {
+            a: "আলোর তীব্রতা",
+            b: "বিস্তারের পার্থক্য",
+            c: "উৎসের পার্থক্য",
+            d: "তরঙ্গদৈর্ঘ্যের পার্থক্য",
+          },
+          answer: "d",
+          explanation:
+            "<p>আলোর <b>বর্ণ</b> তার <b>তরঙ্গদৈর্ঘ্যের (wavelength)</b> উপর নির্ভর করে। দৃশ্যমান আলোর বর্ণালীতে, বিভিন্ন বর্ণের আলোর বিভিন্ন তরঙ্গদৈর্ঘ্য থাকে। যেমন, লাল আলোর তরঙ্গদৈর্ঘ্য সবচেয়ে বেশি এবং বেগুনি আলোর তরঙ্গদৈর্ঘ্য সবচেয়ে কম।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "আলো যখন বায়ু থেকে কাচে প্রবেশ করে তখন আলোর তরঙ্গের কী পরিবর্তন হয়?",
+          options: {
+            a: "রং ও তরঙ্গদৈর্ঘ্য",
+            b: "কম্পাঙ্ক ও তরঙ্গদৈর্ঘ্য",
+            c: "বেগ ও তরঙ্গদৈর্ঘ্য",
+            d: "রং ও বেগ",
+          },
+          answer: "c",
+          explanation:
+            "<p>যখন আলো এক মাধ্যম থেকে অন্য মাধ্যমে (যেমন বায়ু থেকে কাচে) প্রবেশ করে, তখন এর <b>বেগ (দ্রুতি)</b> এবং <b>তরঙ্গদৈর্ঘ্য</b> পরিবর্তিত হয়। আলোর <b>কম্পাঙ্ক</b> অপরিবর্তিত থাকে।</p>",
+        },
+        {
+          id: 26,
+          question: "সমতল দর্পণের সামনে রাখা কোনো বস্তুর প্রতিবিম্ব হবে-",
+          options: {
+            a: "সোজা, বিবর্ধিত এবং বাস্তব",
+            b: "সোজা, বস্তুর আকারের সমান এবং অবাস্তব",
+            c: "উল্টা, খর্বিত এবং বাস্তব",
+            d: "উল্টা, বিবর্ধিত এবং অবাস্তব",
+          },
+          answer: "b",
+          explanation:
+            "<p>একটি <b>সমতল দর্পণ</b> সর্বদা <b>সোজা, বস্তুর আকারের সমান এবং অবাস্তব (virtual)</b> প্রতিবিম্ব তৈরি করে।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "আলো ঘন মাধ্যম হতে লঘুতর মাধ্যমে প্রবেশকালে প্রতিসৃত রশ্মি-",
+          options: {
+            a: "অভিলম্ব হতে দূরে সরে যায়",
+            b: "অভিলম্বের নিকটবর্তী হয়",
+            c: "দিক পরিবর্তন হয় না",
+            d: "বিভেদতল ঘেঁষে যায়",
+          },
+          answer: "a",
+          explanation:
+            "<p>যখন আলো একটি <b>ঘন মাধ্যম</b> থেকে একটি <b>লঘুতর মাধ্যমে</b> প্রবেশ করে, তখন এটি <b>অভিলম্ব (normal) থেকে দূরে সরে যায়</b>।</p>",
+        },
+        {
+          id: 28,
+          question: "পূর্ণ অভ্যন্তরীণ প্রতিফলনের ক্ষেত্রে, আপতন কোণ-",
+          options: {
+            a: "সংকট কোণের চেয়ে বড়",
+            b: "সংকট কোণের সমান",
+            c: "সংকট কোণের চেয়ে ছোট",
+            d: "90°",
+          },
+          answer: "a",
+          explanation:
+            "<p><b>পূর্ণ অভ্যন্তরীণ প্রতিফলন</b> তখনই ঘটে যখন আলো একটি ঘন মাধ্যম থেকে লঘু মাধ্যমে আপতিত হয় এবং <b>আপতন কোণ সংকট কোণের চেয়ে বড়</b> হয়।</p>",
+        },
+        {
+          id: 29,
+          question: "আপতন কোণ সংকট কোণের সমান হলে প্রতিসরণ কোণ কত?",
+          options: {
+            a: "0°",
+            b: "45°",
+            c: "90°",
+            d: "180°",
+          },
+          answer: "c",
+          explanation:
+            "<p>যখন আলোক রশ্মি ঘন মাধ্যম থেকে লঘু মাধ্যমে আপতিত হয় এবং <b>আপতন কোণটি সংকট কোণের সমান</b> হয়, তখন <b>প্রতিসরণ কোণ 90°</b> হয়।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "একটি অবতল দর্পণ হতে কত দূরে বস্তু স্থাপন করলে প্রতিবিম্বের দৈর্ঘ্য তার অর্ধেক হবে?",
+          options: {
+            a: "3f",
+            b: "2f",
+            c: "f",
+            d: "4f",
+          },
+          answer: "a",
+          explanation:
+            "<p>একটি <b>অবতল দর্পণে</b> প্রতিবিম্বের দৈর্ঘ্য বস্তুর দৈর্ঘ্যের অর্ধেক হওয়ার অর্থ হলো <b>বিবর্ধন (M) = -½</b> (বাস্তব ও উল্টা)।<br>বিবর্ধনের সূত্র: M = f / (f - u)<br>-½ = f / (f - u)<br>-(f - u) = 2f<br>-f + u = 2f<br><b>u = 3f</b></p>",
+        },
+        {
+          id: 31,
+          question:
+            "অবতল দর্পণের বক্রতার কেন্দ্রে একটি বস্তু স্থাপন করলে প্রতিবিম্ব সৃষ্টি হয়-",
+          options: {
+            a: "বক্রতার কেন্দ্রে",
+            b: "ফোকাস বিন্দুতে",
+            c: "অসীমে",
+            d: "কোনোটিই নয়",
+          },
+          answer: "a",
+          explanation:
+            "<p>যখন একটি <b>অবতল দর্পণের বক্রতার কেন্দ্রে (C)</b> একটি বস্তু স্থাপন করা হয়, তখন প্রতিবিম্বটি <b>বক্রতার কেন্দ্রেই</b> গঠিত হয়। এই প্রতিবিম্বটি <b>বাস্তব, উল্টা এবং বস্তুর আকারের সমান</b> হয়।</p>",
+        },
+        {
+          id: 32,
+          question:
+            "পরস্পর সমান্তরাল এবং প্রধান অক্ষের সাথে সামান্য আনত রশ্মিগুচ্ছ অবতল দর্পণে প্রতিফলনের পর মিলিত হয়-",
+          options: {
+            a: "প্রধান ফোকাসে",
+            b: "গৌণ ফোকাসে",
+            c: "অণুবন্ধী ফোকাসে",
+            d: "ফোকাস তলে",
+          },
+          answer: "b",
+          explanation:
+            "<p>যে রশ্মিগুচ্ছগুলো <b>প্রধান অক্ষের সমান্তরাল নয় কিন্তু পরস্পরের সমান্তরাল</b>, তারা প্রতিফলনের পর <b>গৌণ ফোকাসে (secondary focus)</b> মিলিত হয়, যা <b>ফোকাস তলের</b> উপর অবস্থিত।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "কোন অঞ্চলে বস্তু স্থাপন করা হলে অবতল দর্পণে অবাস্তব প্রতিবিম্ব সৃষ্টি হয়?",
+          options: {
+            a: "ফোকাস তলে",
+            b: "ফোকাস থেকে মেরুর মাঝে",
+            c: "বক্রতার কেন্দ্র থেকে ফোকাসের মধ্যে",
+            d: "অসীম থেকে বক্রতার কেন্দ্রের মাঝে",
+          },
+          answer: "b",
+          explanation:
+            "<p>একটি <b>অবতল দর্পণে</b> <b>অবাস্তব (virtual) প্রতিবিম্ব</b> তখনই সৃষ্টি হয় যখন বস্তুকে <b>ফোকাস (F) এবং মেরুর (P) মাঝে</b> স্থাপন করা হয় (অর্থাৎ, u < f)।</p>",
+        },
+        {
+          id: 34,
+          question: "বিবর্ধন ঋণাত্মক ও এক অপেক্ষা বড় হলে নিচের কোনটি সঠিক?",
+          options: {
+            a: "দর্পণটি উত্তল এবং বিম্ব অবাস্তব",
+            b: "দর্পণটি অবতল এবং বিম্ব অবাস্তব",
+            c: "দর্পণটি অবতল এবং বস্তু ফোকাস ও বক্রতার কেন্দ্রের মাঝে",
+            d: "দর্পণটি অবতল এবং বস্তু ফোকাস ও মেরুর মাঝে",
+          },
+          answer: "c",
+          explanation:
+            "<p><b>বিবর্ধন ঋণাত্মক</b> মানে প্রতিবিম্বটি <b>বাস্তব এবং উল্টা</b>।<br><b>বিবর্ধন এক অপেক্ষা বড়</b> মানে প্রতিবিম্বটি <b>বিবর্ধিত</b>।<br>এই দুটি শর্ত শুধুমাত্র <b>অবতল দর্পণে</b> সম্ভব, যখন <b>বস্তুকে ফোকাস ও বক্রতার কেন্দ্রের মাঝে</b> রাখা হয়।</p>",
+        },
+        {
+          id: 35,
+          question: "অবতল দর্পণের ক্ষেত্রে 2f < u < ∞ হলে, নিচের কোনটি সঠিক?",
+          options: {
+            a: "2f < v < ∞",
+            b: "v = 2f",
+            c: "f < v < 2f",
+            d: "0 < v < f",
+          },
+          answer: "c",
+          explanation:
+            "<p>একটি <b>অবতল দর্পণে</b> যখন <b>বস্তুটিকে বক্রতার কেন্দ্রের বাইরে</b> (অর্থাৎ, <b>2f < u < ∞</b>) স্থাপন করা হয়, তখন প্রতিবিম্বটি <b>ফোকাস (f) এবং বক্রতার কেন্দ্র (2f) এর মধ্যে</b> গঠিত হয়।<br>সুতরাং, প্রতিবিম্বের দূরত্ব (v) এর জন্য সঠিক সম্পর্কটি হলো: <b>f < v < 2f</b>।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                <label class="option" data-option="${option}">
+                                <div class="circle">${option}</div>
+                                <span class="option-text">${question.options[option]}</span>
+                                </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                         <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                         <div class="explanation-content">
+                                                                                           <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                           ${question.explanation}
+                                                                                         </div>
+                                                                                       </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                    <p class="question-label">${
+                                                                                      index +
+                                                                                      1
+                                                                                    }. ${
+            question.question
+          }</p>
+                                                                                    <div class="options">
+                                                                                      ${optionsHTML}
+                                                                                    </div>
+                                                                                    ${explanationHTML}
+                                                                                  `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
